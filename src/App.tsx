@@ -163,103 +163,63 @@ const translateAtayalToChinese = async (text: string): Promise<string> => {
 const uploadAudioForTranscription = async (audioFile: File, targetLanguage: 'chinese' | 'atayal') => {
   const formData = new FormData();
   formData.append('file', audioFile);
-  
-  // Log FormData contents
-  console.log('FormData entries:');
-  Array.from(formData.entries()).forEach(([key, value]) => {
-    console.log(key, value);
-  });
-  
+
   const endpoint = targetLanguage === 'chinese' ? '/to_chinese/' : '/to_atayal/';
   const fullUrl = `${ASR_API_BASE}${endpoint}`;
-  
-  console.log('Uploading to:', fullUrl);
-  console.log('File:', audioFile.name, 'Size:', audioFile.size, 'Type:', audioFile.type);
-  
+
   try {
-    // Thử nhiều proxy khác nhau để bypass CORS
-    let response;
-    let usedProxy = false;
-    const proxies = [
-      'https://api.allorigins.win/raw?url=',
-      'https://cors-anywhere.herokuapp.com/',
-      'https://thingproxy.freeboard.io/fetch/',
-      null // null means direct request
+    // Ưu tiên gọi trực tiếp, nếu CORS lỗi thì thử proxy
+    const candidates = [
+      { url: fullUrl, headerOnly: false },
+      { url: `https://api.allorigins.win/raw?url=${encodeURIComponent(fullUrl)}`, headerOnly: true },
+      { url: `https://thingproxy.freeboard.io/fetch/${fullUrl}`, headerOnly: true },
+      { url: `https://cors-anywhere.herokuapp.com/${fullUrl}`, headerOnly: true },
     ];
-    
-    for (const proxy of proxies) {
+
+    let lastError: unknown = null;
+    for (const c of candidates) {
       try {
-        if (proxy) {
-          console.log('Trying proxy:', proxy);
-          const proxyUrl = proxy + (proxy.includes('?') ? encodeURIComponent(fullUrl) : fullUrl);
-          response = await fetch(proxyUrl, {
-            method: 'POST',
-            headers: {
-              'accept': 'application/json',
-            },
-            body: formData,
-          });
-          usedProxy = true;
-          console.log('Proxy worked:', proxy);
-          break;
-        } else {
-          console.log('Trying direct request...');
-          response = await fetch(fullUrl, {
-            method: 'POST',
-            headers: {
-              'accept': 'application/json',
-            },
-            body: formData,
-          });
-          console.log('Direct request worked');
-          break;
+        const res = await fetch(c.url, {
+          method: 'POST',
+          // Khi qua proxy, không set header 'accept' để tránh bị chặn
+          headers: c.headerOnly ? undefined : { 'accept': 'application/json' },
+          body: formData,
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`HTTP ${res.status} - ${txt}`);
         }
-      } catch (proxyError) {
-        const errorMsg = proxyError instanceof Error ? proxyError.message : 'Unknown error';
-        console.log('Proxy failed:', proxy, errorMsg);
+        // Theo OpenAPI: application/json kiểu chuỗi
+        let resultText = '';
+        try {
+          const data = await res.json();
+          // Có thể API trả về JSON string trực tiếp
+          if (typeof data === 'string') {
+            resultText = data;
+          } else if (data && typeof data.text === 'string') {
+            resultText = data.text;
+          } else {
+            resultText = JSON.stringify(data);
+          }
+        } catch {
+          // Fallback nếu không parse được JSON
+          resultText = await res.text();
+        }
+        // Làm sạch nếu có timestamp dạng [0.0-4.66s]
+        const clean = resultText.replace(/\[\d+\.\d+-\d+\.\d+s\]\s*/g, '').trim();
+        return clean || resultText;
+      } catch (err) {
+        lastError = err;
         continue;
       }
     }
-    
-    if (!response) {
-      throw new Error('All proxies and direct request failed');
-    }
-    
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers);
-    console.log('Used proxy:', usedProxy);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error Response:', errorText);
-      throw new Error(`Transcription failed: ${response.status} - ${errorText}`);
-    }
-    
-    // API trả về text, không phải JSON
-    const result = await response.text();
-    console.log('API Response:', result);
-    
-    // Xử lý response text - loại bỏ timestamp nếu có
-    if (result) {
-      // Nếu response có timestamp format [0.0-4.66s], loại bỏ chúng
-      const cleanText = result.replace(/\[\d+\.\d+-\d+\.\d+s\]\s*/g, '').trim();
-      console.log('Cleaned text:', cleanText);
-      return cleanText || result;
-    } else {
-      return 'Transcription completed but no text returned';
-    }
+    throw lastError ?? new Error('All attempts failed');
   } catch (error) {
-    console.error('API Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    // Kiểm tra loại lỗi
-    if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+    if (/Failed to fetch|NetworkError/i.test(errorMessage)) {
       throw new Error('Network error: Please check your internet connection and try again.');
-    } else if (errorMessage.includes('CORS')) {
-      throw new Error('CORS error: Please contact the administrator.');
-    } else {
-      throw new Error(`Transcription service temporarily unavailable: ${errorMessage}`);
     }
+    throw new Error(`Transcription service temporarily unavailable: ${errorMessage}`);
   }
 };
 
@@ -1446,6 +1406,40 @@ const TTSPage = () => {
 
 // Transcribe page: small image card + simplified interface (already simplified)
 const TranscribePage = () => {
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [uploadedFileName, setUploadedFileName] = React.useState<string>('');
+  const [processing, setProcessing] = React.useState(false);
+  const [outputText, setOutputText] = React.useState('');
+
+  const handleFilePick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    // API khuyến nghị WAV; cho phép nhưng cảnh báo mềm nếu không phải wav
+    const isWav = /\.wav$/i.test(file.name) || file.type === 'audio/wav' || file.type === 'audio/x-wav';
+    if (!isWav) {
+      // Không chặn hoàn toàn, vẫn cho phép thử
+      console.warn('Non-WAV file selected; API recommends WAV.');
+    }
+    setSelectedFile(file);
+    setUploadedFileName(file.name);
+  };
+
+  const handleProcess = async () => {
+    if (!selectedFile || processing) return;
+    setProcessing(true);
+    setOutputText('');
+    try {
+      // Theo yêu cầu trang: Transcribe Atayal Speech to Text => targetLanguage = 'atayal'
+      const result = await uploadAudioForTranscription(selectedFile, 'atayal');
+      setOutputText(result);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      setOutputText(`Error: ${msg}`);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   return (
     <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 4 }}>
       <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
@@ -1465,7 +1459,7 @@ const TranscribePage = () => {
             上傳音檔進行轉錄
           </Typography>
           <Typography variant="body1" sx={{ mb: 3, textAlign: 'center', color: '#666' }}>
-            Upload Audio File for Transcription
+            Upload Audio File for Transcription (WAV recommended)
           </Typography>
           
           {/* Audio Upload Section */}
@@ -1474,10 +1468,10 @@ const TranscribePage = () => {
               音檔上傳 Audio Upload
             </Typography>
             <Typography variant="body2" sx={{ mb: 2, color: '#666' }}>
-              支援格式：WAV, MP3, M4A 等音檔格式
+              支援格式：WAV（推薦）、其他常見音訊格式可嘗試
             </Typography>
             <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
-              Supported formats: WAV, MP3, M4A and other audio formats
+              Supported formats: WAV (recommended); other audio types may work
             </Typography>
             
             <Box sx={{ mt: 2 }}>
@@ -1486,23 +1480,26 @@ const TranscribePage = () => {
                 style={{ display: 'none' }}
                 id="transcribe-audio-upload"
                 type="file"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    console.log('Audio file selected:', file.name);
-                  }
-                }}
+                onChange={handleFilePick}
               />
-              <UploadButton htmlFor="transcribe-audio-upload">
+              <UploadButton htmlFor="transcribe-audio-upload" style={{ 
+                cursor: processing ? 'not-allowed' : 'pointer',
+                opacity: processing ? 0.6 : 1
+              }}>
                 <AudiotrackIcon /> 選擇音檔 Choose Audio File
               </UploadButton>
+              {uploadedFileName && (
+                <Typography variant="body2" sx={{ mt: 1, color: '#f57983' }}>
+                  📁 {uploadedFileName}
+                </Typography>
+              )}
             </Box>
           </Box>
           
           {/* Process Button */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <ProcessButton>
-              <AudiotrackIcon /> 開始轉錄 Start Transcription
+            <ProcessButton onClick={handleProcess} disabled={processing || !selectedFile}>
+              {processing && <CircularProgress size={20} color="inherit" />} 開始轉錄 Start Transcription
             </ProcessButton>
           </Box>
           
@@ -1513,6 +1510,7 @@ const TranscribePage = () => {
             </Typography>
             <TextArea
               placeholder="轉錄結果將顯示在這裡... / Transcription result will appear here..."
+              value={outputText}
               readOnly
               style={{ minHeight: '120px' }}
             />
