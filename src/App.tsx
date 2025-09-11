@@ -168,12 +168,10 @@ const uploadAudioForTranscription = async (audioFile: File, targetLanguage: 'chi
   const fullUrl = `${ASR_API_BASE}${endpoint}`;
 
   try {
-    // Ưu tiên gọi trực tiếp, nếu CORS lỗi thì thử proxy
+    // Chỉ dùng các endpoint có hỗ trợ POST body
     const candidates = [
-      { url: fullUrl, headerOnly: false },
-      { url: `https://api.allorigins.win/raw?url=${encodeURIComponent(fullUrl)}`, headerOnly: true },
-      { url: `https://thingproxy.freeboard.io/fetch/${fullUrl}`, headerOnly: true },
-      { url: `https://cors-anywhere.herokuapp.com/${fullUrl}`, headerOnly: true },
+      { url: fullUrl, proxy: false },
+      { url: `https://cors-anywhere.herokuapp.com/${fullUrl}`, proxy: true },
     ];
 
     let lastError: unknown = null;
@@ -181,31 +179,28 @@ const uploadAudioForTranscription = async (audioFile: File, targetLanguage: 'chi
       try {
         const res = await fetch(c.url, {
           method: 'POST',
-          // Khi qua proxy, không set header 'accept' để tránh bị chặn
-          headers: c.headerOnly ? undefined : { 'accept': 'application/json' },
+          // KHÔNG đặt 'Content-Type' để browser tự thêm multipart boundary
+          headers: { 'accept': 'application/json' },
           body: formData,
         });
         if (!res.ok) {
           const txt = await res.text();
           throw new Error(`HTTP ${res.status} - ${txt}`);
         }
-        // Theo OpenAPI: application/json kiểu chuỗi
         let resultText = '';
         try {
-          const data = await res.json();
-          // Có thể API trả về JSON string trực tiếp
+          // Dùng clone để có thể fallback sang text nếu không phải JSON
+          const data = await res.clone().json();
           if (typeof data === 'string') {
             resultText = data;
-          } else if (data && typeof data.text === 'string') {
-            resultText = data.text;
+          } else if (data && typeof (data as any).text === 'string') {
+            resultText = (data as any).text;
           } else {
             resultText = JSON.stringify(data);
           }
         } catch {
-          // Fallback nếu không parse được JSON
           resultText = await res.text();
         }
-        // Làm sạch nếu có timestamp dạng [0.0-4.66s]
         const clean = resultText.replace(/\[\d+\.\d+-\d+\.\d+s\]\s*/g, '').trim();
         return clean || resultText;
       } catch (err) {
@@ -218,6 +213,9 @@ const uploadAudioForTranscription = async (audioFile: File, targetLanguage: 'chi
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     if (/Failed to fetch|NetworkError/i.test(errorMessage)) {
       throw new Error('Network error: Please check your internet connection and try again.');
+    }
+    if (/cors-anywhere/i.test(String(errorMessage))) {
+      throw new Error('Proxy blocked. Try enabling CORS Anywhere or contact admin.');
     }
     throw new Error(`Transcription service temporarily unavailable: ${errorMessage}`);
   }
