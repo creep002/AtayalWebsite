@@ -163,7 +163,7 @@ const translateAtayalToChinese = async (text: string): Promise<string> => {
 const uploadAudioForTranscription = async (audioFile: File, targetLanguage: 'chinese' | 'atayal') => {
   const formData = new FormData();
   formData.append('file', audioFile);
-
+  
   const endpoint = targetLanguage === 'chinese' ? '/to_chinese/' : '/to_atayal/';
   const fullUrl = `${ASR_API_BASE}${endpoint}`;
 
@@ -178,11 +178,11 @@ const uploadAudioForTranscription = async (audioFile: File, targetLanguage: 'chi
     for (const c of candidates) {
       try {
         const res = await fetch(c.url, {
-          method: 'POST',
+            method: 'POST',
           // KHÔNG đặt 'Content-Type' để browser tự thêm multipart boundary
           headers: { 'accept': 'application/json' },
-          body: formData,
-        });
+            body: formData,
+          });
         if (!res.ok) {
           const txt = await res.text();
           throw new Error(`HTTP ${res.status} - ${txt}`);
@@ -195,7 +195,7 @@ const uploadAudioForTranscription = async (audioFile: File, targetLanguage: 'chi
             resultText = data;
           } else if (data && typeof (data as any).text === 'string') {
             resultText = (data as any).text;
-          } else {
+        } else {
             resultText = JSON.stringify(data);
           }
         } catch {
@@ -737,7 +737,7 @@ const SecondaryNav = () => {
                   '&:hover': { color: '#4A5568' }
                 }}>
                   {item.text}
-                </Typography>
+        </Typography>
                 <Typography variant="caption" sx={{
                   color: location.pathname === item.path ? '#718096' : '#CBD5E0',
                   fontStyle: 'italic',
@@ -748,7 +748,7 @@ const SecondaryNav = () => {
                   {item.english}
                 </Typography>
               </Box>
-            </StyledLink>
+        </StyledLink>
             {idx < navItems.length - 1 && (
               <Typography sx={{ color: '#E2E8F0' }}>›</Typography>
             )}
@@ -789,7 +789,7 @@ const HomePage = () => (
         fontSize: { xs: '1.8rem', md: '2.2rem' }
       }}>
         泰雅族藥用知識與族語學習AI
-      </Typography>
+    </Typography>
       <Typography variant="subtitle1" sx={{ 
         mb: 0, 
         fontStyle: 'italic',
@@ -798,7 +798,7 @@ const HomePage = () => (
         zIndex: 1,
       }}>
         Atayal Medicinal Knowledge and AI-assisted Language Learning
-      </Typography>
+    </Typography>
     </Box>
 
     {/* Small image card outside banner */}
@@ -829,7 +829,7 @@ const HomePage = () => (
             </Typography>
             <Typography component="li" variant="body2" sx={{ mb: 0.75, display: 'flex', alignItems: 'flex-start', gap: 1, color: '#374151' }}>
               <CheckCircleOutlineIcon fontSize="small" sx={{ color: '#f57983', mt: '2px' }} />
-              泰雅語翻譯成華語：將泰雅語文字或語音翻譯成華語文字，並提供發音功能，讓尚不會閱讀華文的學習者可以知道翻譯的內容。
+              泰雅語翻譯成華語：將泰雅語文字或語音翻譯成華語文字。
             </Typography>
             <Typography component="li" variant="body2" sx={{ mb: 0.75, display: 'flex', alignItems: 'flex-start', gap: 1, color: '#374151' }}>
               <CheckCircleOutlineIcon fontSize="small" sx={{ color: '#f57983', mt: '2px' }} />
@@ -974,6 +974,29 @@ const ProcessButton = styled.button`
   transition: background 0.2s;
   &:hover {
     background: #e97f8a;
+  }
+`;
+
+const RecordingButton = styled.button<{ variant: 'start' | 'stop' }>`
+  background: ${props => props.variant === 'start' ? '#4CAF50' : '#f44336'};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s;
+  &:hover:not(:disabled) {
+    background: ${props => props.variant === 'start' ? '#45a049' : '#da190b'};
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 `;
 
@@ -1191,6 +1214,14 @@ const LearningPage = () => {
 };
 
 const SmallImageCard = ({ src, alt }: { src: string; alt: string }) => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+    <Box sx={{ width: 200, borderRadius: 2, overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.12)' }}>
+      <img src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+    </Box>
+  </Box>
+);
+
+const SmallImageCardRight = ({ src, alt }: { src: string; alt: string }) => (
   <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
     <Box sx={{ width: 200, borderRadius: 2, overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.12)' }}>
       <img src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -1222,25 +1253,93 @@ const TranslationPage = ({
   const [ttsLoading, setTtsLoading] = React.useState(false);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
+  // Recording states
+  const [isRecording, setIsRecording] = React.useState(false);
+  const [mediaRecorder, setMediaRecorder] = React.useState<MediaRecorder | null>(null);
+  const [recordedChunks, setRecordedChunks] = React.useState<Blob[]>([]);
+
   const handleProcess = async () => {
     if (!inputText.trim()) {
       alert('Please enter text to translate');
-      return;
-    }
+        return;
+      }
 
     setProcessing(true);
-    try {
-      let translated = '';
-      if (targetLanguage === 'atayal') {
-        translated = await translateChineseToAtayal(inputText);
-      } else {
-        translated = await translateAtayalToChinese(inputText);
-      }
-      setProcessing(false);
-      setOutputText(translated || '');
-    } catch (err) {
-      setProcessing(false);
+        try {
+          let translated = '';
+          if (targetLanguage === 'atayal') {
+            translated = await translateChineseToAtayal(inputText);
+          } else {
+            translated = await translateAtayalToChinese(inputText);
+          }
+          setProcessing(false);
+          setOutputText(translated || '');
+        } catch (err) {
+          setProcessing(false);
       setOutputText('Translation failed. Please try again.');
+    }
+  };
+
+  // Recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/wav' });
+        setRecordedChunks(chunks);
+        // Auto-process the recorded audio
+        processRecordedAudio(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Could not access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setMediaRecorder(null);
+    }
+  };
+
+  const processRecordedAudio = async (audioBlob: Blob) => {
+    setProcessing(true);
+    try {
+      // Sử dụng endpoint ngược lại với targetLanguage
+      const endpoint = targetLanguage === 'atayal' ? 'to_chinese' : 'to_atayal';
+      const result = await uploadAudioForTranscription(audioBlob as File, endpoint as 'chinese' | 'atayal');
+      setInputText(result);
+      // Auto-translate if we got text
+      if (result.trim()) {
+        let translated = '';
+        if (targetLanguage === 'atayal') {
+          translated = await translateChineseToAtayal(result);
+        } else {
+          translated = await translateAtayalToChinese(result);
+        }
+        setOutputText(translated);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      setInputText(`Error transcribing audio: ${msg}`);
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -1276,16 +1375,37 @@ const TranslationPage = ({
       <StyledPaper>
         <Typography variant="h5" sx={{ fontWeight: 600, mb: 3, color: '#f57983', textAlign: 'center' }}>
           文字翻譯
-        </Typography>
+      </Typography>
         <Typography variant="body1" sx={{ mb: 3, textAlign: 'center', color: '#666' }}>
           Text Translation
-        </Typography>
+      </Typography>
         
         {/* Input Section */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#f57983' }}>
             {inputLangLabel}
           </Typography>
+          
+          {/* Recording Button */}
+          <Box sx={{ mb: 2, textAlign: 'center' }}>
+            {!isRecording ? (
+              <RecordingButton 
+                variant="start"
+                onClick={startRecording} 
+                disabled={processing}
+              >
+                🎤 開始錄音 Start Recording
+              </RecordingButton>
+            ) : (
+              <RecordingButton 
+                variant="stop"
+                onClick={stopRecording}
+              >
+                ⏹️ 停止錄音 Stop Recording
+              </RecordingButton>
+            )}
+          </Box>
+          
           <TextArea
             placeholder={inputPlaceholder}
             value={inputText}
@@ -1293,8 +1413,8 @@ const TranslationPage = ({
             disabled={processing}
             style={{ minHeight: '120px' }}
           />
-        </Box>
-        
+          </Box>
+
         {/* Translate Button */}
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <ProcessButton onClick={handleProcess} disabled={processing || !inputText.trim()}>
@@ -1321,26 +1441,26 @@ const TranslationPage = ({
           <Box>
             <FormControl component="fieldset" sx={{ mb: 2 }}>
               <FormLabel component="legend">Voice Selection</FormLabel>
-              <RadioGroup
-                row
-                value={voice}
-                onChange={e => setVoice(e.target.value as 'male' | 'female')}
-              >
-                <FormControlLabel value="male" control={<Radio />} label={<MaleIcon />} />
-                <FormControlLabel value="female" control={<Radio />} label={<FemaleIcon />} />
-              </RadioGroup>
-            </FormControl>
+            <RadioGroup
+              row
+              value={voice}
+              onChange={e => setVoice(e.target.value as 'male' | 'female')}
+            >
+              <FormControlLabel value="male" control={<Radio />} label={<MaleIcon />} />
+              <FormControlLabel value="female" control={<Radio />} label={<FemaleIcon />} />
+            </RadioGroup>
+          </FormControl>
             
-            <OutputAudioBox>
-              <ProcessButton 
-                onClick={handlePlayAudio}
-                disabled={ttsLoading || !outputText}
+          <OutputAudioBox>
+            <ProcessButton 
+              onClick={handlePlayAudio}
+              disabled={ttsLoading || !outputText}
                 style={{ background: '#FFDAB9', minWidth: 48, padding: '0.5rem 1.2rem' }}
-              >
-                {ttsLoading ? <CircularProgress size={20} color="inherit" /> : <VolumeUpIcon />}
-              </ProcessButton>
-              <Typography variant="body2">Play output audio</Typography>
-            </OutputAudioBox>
+            >
+              {ttsLoading ? <CircularProgress size={20} color="inherit" /> : <VolumeUpIcon />}
+            </ProcessButton>
+            <Typography variant="body2">Play output audio</Typography>
+          </OutputAudioBox>
           </Box>
         )}
       </StyledPaper>
@@ -1362,15 +1482,15 @@ const ASRPage = () => {
       {/* Small image card outside banner */}
       <SmallImageCard src={translateChineseImg} alt="Translate Chinese to Atayal" />
 
-      <TranslationPage
+    <TranslationPage
         title=""
         englishTitle=""
         inputPlaceholder="Enter Chinese text..."
-        outputPlaceholder="Atayal translation will appear here..."
+      outputPlaceholder="Atayal translation will appear here..."
         inputLangLabel="華語輸入 Chinese Input"
         outputLangLabel="泰雅語輸出 Atayal Output"
-        targetLanguage="atayal"
-      />
+      targetLanguage="atayal"
+    />
     </Box>
   );
 };
@@ -1389,15 +1509,15 @@ const TTSPage = () => {
       {/* Small image card outside banner */}
       <SmallImageCard src={translateAtayalImg} alt="Translate Atayal to Chinese" />
 
-      <TranslationPage
+    <TranslationPage
         title=""
         englishTitle=""
         inputPlaceholder="Enter Atayal text..."
-        outputPlaceholder="Chinese translation will appear here..."
+      outputPlaceholder="Chinese translation will appear here..."
         inputLangLabel="泰雅語輸入 Atayal Input"
         outputLangLabel="華語輸出 Chinese Output"
-        targetLanguage="chinese"
-      />
+      targetLanguage="chinese"
+    />
     </Box>
   );
 };
@@ -1408,6 +1528,11 @@ const TranscribePage = () => {
   const [uploadedFileName, setUploadedFileName] = React.useState<string>('');
   const [processing, setProcessing] = React.useState(false);
   const [outputText, setOutputText] = React.useState('');
+  
+  // Recording states
+  const [isRecording, setIsRecording] = React.useState(false);
+  const [mediaRecorder, setMediaRecorder] = React.useState<MediaRecorder | null>(null);
+  const [recordedChunks, setRecordedChunks] = React.useState<Blob[]>([]);
 
   const handleFilePick = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1433,6 +1558,59 @@ const TranscribePage = () => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error';
       setOutputText(`Error: ${msg}`);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/wav' });
+        setRecordedChunks(chunks);
+        // Auto-process the recorded audio
+        processRecordedAudio(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Could not access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setMediaRecorder(null);
+    }
+  };
+
+  const processRecordedAudio = async (audioBlob: Blob) => {
+    setProcessing(true);
+    setOutputText('');
+    try {
+      // Trang Transcribe: thu âm Atayal → text Atayal
+      const result = await uploadAudioForTranscription(audioBlob as File, 'atayal');
+      setOutputText(result);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      setOutputText(`Error transcribing audio: ${msg}`);
     } finally {
       setProcessing(false);
     }
@@ -1471,6 +1649,26 @@ const TranscribePage = () => {
             <Typography variant="caption" sx={{ color: '#999', fontStyle: 'italic' }}>
               Supported formats: WAV (recommended); other audio types may work
             </Typography>
+            
+            {/* Recording Button */}
+            <Box sx={{ mt: 2, mb: 2, textAlign: 'center' }}>
+              {!isRecording ? (
+                <RecordingButton 
+                  variant="start"
+                  onClick={startRecording} 
+                  disabled={processing}
+                >
+                  🎤 開始錄音 Start Recording
+                </RecordingButton>
+              ) : (
+                <RecordingButton 
+                  variant="stop"
+                  onClick={stopRecording}
+                >
+                  ⏹️ 停止錄音 Stop Recording
+                </RecordingButton>
+              )}
+            </Box>
             
             <Box sx={{ mt: 2 }}>
               <input
