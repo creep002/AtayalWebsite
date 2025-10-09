@@ -3,27 +3,17 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import styled from 'styled-components';
 import MicIcon from '@mui/icons-material/Mic';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import HomeIcon from '@mui/icons-material/Home';
-import MenuIcon from '@mui/icons-material/Menu';
-import IconButton from '@mui/material/IconButton';
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
 import SpaIcon from '@mui/icons-material/Spa';
 import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
 import CoronavirusIcon from '@mui/icons-material/Coronavirus';
 import PersonIcon from '@mui/icons-material/Person';
-import Collapse from '@mui/material/Collapse';
 import AudiotrackIcon from '@mui/icons-material/Audiotrack';
 import MaleIcon from '@mui/icons-material/Male';
 import FemaleIcon from '@mui/icons-material/Female';
@@ -33,12 +23,9 @@ import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
-import StopIcon from '@mui/icons-material/Stop';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
-import Button from '@mui/material/Button';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
@@ -259,28 +246,7 @@ const StyledPaper = styled(Paper)`
   border: 1px solid rgba(245, 121, 131, 0.35);
 `;
 
-const SectionBox = styled(Box)`
-  margin-bottom: 3rem;
-  position: relative;
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -1.5rem;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(to right, transparent, #FFC9A6, transparent);
-  }
-  
-  &:last-child::after {
-    display: none;
-  }
-`;
+// removed unused SectionBox
 
 const TextArea = styled.textarea`
   width: 100%;
@@ -384,48 +350,9 @@ const ActionButton = styled.button<{ variant?: 'primary' | 'secondary' }>`
   }
 `;
 
-const ButtonGroup = styled(Box)`
-  display: flex;
-  gap: 1rem;
-  margin-top: 1.25rem;
-  flex-wrap: wrap;
-`;
+// removed unused ButtonGroup
 
-const Header = styled(Box)`
-  text-align: center;
-  margin-bottom: 3rem;
-  padding: 3rem 0;
-  background: linear-gradient(135deg, #f57983 0%, #e97f8a 100%);
-  border-radius: 16px;
-  color: #2D3748;
-  position: relative;
-  overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, transparent 100%);
-  }
-  
-  h1 {
-    margin: 0;
-    font-size: 2.75rem;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    position: relative;
-  }
-  
-  p {
-    margin: 1rem 0 0;
-    opacity: 0.9;
-    font-size: 1.2rem;
-    position: relative;
-  }
-`;
+// removed unused Header
 
 const Layout = styled(Box)`
   display: flex;
@@ -433,39 +360,11 @@ const Layout = styled(Box)`
   min-height: 100vh;
 `;
 
-const NavDrawer = styled(Drawer)`
-  .MuiDrawer-paper {
-    width: 240px;
-    background: linear-gradient(180deg, #f57983 0%, #e97f8a 100%);
-    color: #2D3748;
-    border-right: none;
-  }
-`;
+// removed unused NavDrawer
 
-const NavHeader = styled(Box)`
-  padding: 1.5rem;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-`;
+// removed unused NavHeader
 
-const NavItem = styled(ListItem)<{ $active?: boolean }>`
-  margin: 0.5rem 1rem;
-  border-radius: 8px;
-  background: ${props => props.$active ? 'rgba(255, 255, 255, 0.1)' : 'transparent'};
-  color: ${props => props.$active ? 'white' : 'rgba(255, 255, 255, 0.7)'};
-  transition: all 0.2s ease;
-  padding: 0.75rem 1rem;
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-  }
-  
-  .MuiListItemIcon-root {
-    color: inherit;
-    min-width: 40px;
-  }
-`;
+// removed unused NavItem
 
 const MainContent = styled(Box)`
   flex: 1;
@@ -473,18 +372,7 @@ const MainContent = styled(Box)`
   background-color: #FFF5EE;
 `;
 
-const MenuButton = styled(IconButton)`
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1200;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  
-  &:hover {
-    background: #fff5f5;
-  }
-`;
+// removed unused MenuButton
 
 const StyledLink = styled(Link)`
   text-decoration: none;
@@ -601,7 +489,7 @@ const navItems = [
   { 
     text: '泰雅族藥用動植物知識', 
     english: 'Atayal Medicinal Plants and Animals',
-    icon: <LocalFloristIcon />, 
+    icon: <img src={`${process.env.PUBLIC_URL}/book.png`} alt="book" style={{ width: 20, height: 20, borderRadius: 2 }} />, 
     path: '/medicinal'
   },
   { 
@@ -723,34 +611,116 @@ const SecondaryNav = () => {
         {navItems.map((item, idx) => (
           <React.Fragment key={item.text}>
             <StyledLink to={item.path}>
-              <Box sx={{
-                display: 'inline-flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                px: 0.5,
-                whiteSpace: 'nowrap'
-              }}>
-                <Typography sx={{
-                  fontWeight: location.pathname === item.path ? 700 : 500,
-                  color: location.pathname === item.path ? '#2D3748' : '#A0AEC0',
-                  transition: 'color 0.15s ease',
-                  '&:hover': { color: '#4A5568' }
-                }}>
-                  {item.text}
+              {item.path === '/medicinal' ? (
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                  <img src={'/book.png'} alt="book" style={{ width: 18, height: 18 }} />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Typography sx={{
+                      fontWeight: location.pathname === item.path ? 700 : 600,
+                      color: location.pathname === item.path ? '#2D3748' : '#4A5568',
+                    }}>
+                      {item.text}
         </Typography>
-                <Typography variant="caption" sx={{
-                  color: location.pathname === item.path ? '#718096' : '#CBD5E0',
-                  fontStyle: 'italic',
-                  lineHeight: 1,
-                  mt: 0.25,
-                  transition: 'color 0.15s ease'
+                    <Typography variant="caption" sx={{
+                      color: '#A0AEC0',
+                      fontStyle: 'italic',
+                      lineHeight: 1,
+                      mt: 0.25
+                    }}>
+                      {item.english}
+                    </Typography>
+                  </Box>
+                </Box>
+              ) : item.path === '/transatayal' ? (
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                  <img src={'/Trung.png'} alt="zh" style={{ width: 25, height: 25 }} />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Typography sx={{
+                      fontWeight: location.pathname === item.path ? 700 : 600,
+                      color: location.pathname === item.path ? '#2D3748' : '#4A5568',
+                    }}>
+                      {item.text}
+                    </Typography>
+                    <Typography variant="caption" sx={{
+                      color: '#A0AEC0',
+                      fontStyle: 'italic',
+                      lineHeight: 1,
+                      mt: 0.25
+                    }}>
+                      {item.english}
+                    </Typography>
+                  </Box>
+                  <img src={'/T.png'} alt="atayal" style={{ width: 25, height: 25 }} />
+                </Box>
+              ) : item.path === '/transchinese' ? (
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                  <img src={'/T.png'} alt="atayal" style={{ width: 25, height: 25 }} />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Typography sx={{
+                      fontWeight: location.pathname === item.path ? 700 : 600,
+                      color: location.pathname === item.path ? '#2D3748' : '#4A5568',
+                    }}>
+                      {item.text}
+                    </Typography>
+                    <Typography variant="caption" sx={{
+                      color: '#A0AEC0',
+                      fontStyle: 'italic',
+                      lineHeight: 1,
+                      mt: 0.25
+                    }}>
+                      {item.english}
+                    </Typography>
+                  </Box>
+                  <img src={'/Trung.png'} alt="zh" style={{ width: 25, height: 25 }} />
+                </Box>
+              ) : item.path === '/transcribe' ? (
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                  <img src={'/mouth.png'} alt="mouth" style={{ width: 25, height: 25 }} />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <Typography sx={{
+                      fontWeight: location.pathname === item.path ? 700 : 600,
+                      color: location.pathname === item.path ? '#2D3748' : '#4A5568',
+                    }}>
+                      {item.text}
+                    </Typography>
+                    <Typography variant="caption" sx={{
+                      color: '#A0AEC0',
+                      fontStyle: 'italic',
+                      lineHeight: 1,
+                      mt: 0.25
+                    }}>
+                      {item.english}
+                    </Typography>
+                  </Box>
+                  <img src={'/pen.png'} alt="pen" style={{ width: 25, height: 25 }} />
+                </Box>
+              ) : (
+                <Box sx={{
+                  display: 'inline-flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  px: 0.5,
+                  whiteSpace: 'nowrap'
                 }}>
-                  {item.english}
-                </Typography>
-              </Box>
+                  <Typography sx={{
+                    fontWeight: location.pathname === item.path ? 700 : 600,
+                    color: location.pathname === item.path ? '#2D3748' : '#4A5568',
+                  }}>
+                    {item.text}
+                  </Typography>
+                  <Typography variant="caption" sx={{
+                    color: '#A0AEC0',
+                    fontStyle: 'italic',
+                    lineHeight: 1,
+                    mt: 0.25
+                  }}>
+                    {item.english}
+                  </Typography>
+                </Box>
+              )}
         </StyledLink>
             {idx < navItems.length - 1 && (
-              <Typography sx={{ color: '#E2E8F0' }}>›</Typography>
+              <Typography sx={{ color: '#CBD5E0' }}>›</Typography>
             )}
           </React.Fragment>
         ))}
@@ -860,7 +830,7 @@ const HomePage = () => (
 . 經費來源：國科會、文化部
 . 計畫主持人：辛靜婷教授/國立清華大學幼兒教育學系
 . 共同主持人：王家慶特聘教授/國立中央大學資訊工程學系
-. 顧問：Apang Bway 劉芝芳/台灣泰雅族語文學會理事長、Batu Utaw 姜裕福/桃園市復興區比亞外部落耆老、Ciwas Behuy 吉娃斯/新竹縣尖石鄉司馬庫斯部落耆老、Ciwas Buya 張艾潔/新竹縣竹東鎮族語教師、Hiri’ Bawnay’ 張秀英/ 新竹縣五峰鄉土場部落耆老、Kumay Behuy 謝森祿/新竹縣五峰鄉松本部落耆老、Lawa Tazil 田玉英/新竹縣尖石鄉馬里光部落耆老、Lesa Batu 范坤松/新竹縣尖石鄉比麟部落耆老、Masay Sulung 馬賽稣隆/新竹縣尖石鄉司馬庫斯部落耆老、Momo Apu 曾冰露/新竹縣尖石鄉嘉樂村耆老、Sayun Yumin 莎韻尤命/新竹縣尖石鄉司馬庫斯部落族語教師、Sugiy Tosi 素伊多夕/桃園市復興區族語教師、Tlaw Nayban 張秋生/ 新竹縣五峰鄉白蘭部落耆老、Toyu Watan 林純桂/桃園市復興區族語教師、Upah Neban 羅美秋/桃園復興區砂崙子部落耆老、Watan Taya 張新仙/桃園復興區高義部落耆老、Yuhaw Taya 邱勇好/ 桃園市復興區比亞外部落耆老、Yumin Hayung 尤命哈用/新竹縣尖石鄉馬里光部落耆老
+. 顧問：Apang Bway 劉芝芳/台灣泰雅族語文學會理事長、Batu Utaw 姜裕福/桃園市復興區比亞外部落耆老、Ciwas Behuy 吉娃斯/新竹縣尖石鄉司馬庫斯部落耆老、Ciwas Buya 張艾潔/新竹縣竹東鎮族語教師、Hiri' Bawnay' 張秀英/ 新竹縣五峰鄉土場部落耆老、Kumay Behuy 謝森祿/新竹縣五峰鄉松本部落耆老、Lawa Tazil 田玉英/新竹縣尖石鄉馬里光部落耆老、Lesa Batu 范坤松/新竹縣尖石鄉比麟部落耆老、Masay Sulung 馬賽稣隆/新竹縣尖石鄉司馬庫斯部落耆老、Momo Apu 曾冰露/新竹縣尖石鄉嘉樂村耆老、Sayun Yumin 莎韻尤命/新竹縣尖石鄉司馬庫斯部落族語教師、Sugiy Tosi 素伊多夕/桃園市復興區族語教師、Tlaw Nayban 張秋生/ 新竹縣五峰鄉白蘭部落耆老、Toyu Watan 林純桂/桃園市復興區族語教師、Upah Neban 羅美秋/桃園復興區砂崙子部落耆老、Watan Taya 張新仙/桃園復興區高義部落耆老、Yuhaw Taya 邱勇好/ 桃園市復興區比亞外部落耆老、Yumin Hayung 尤命哈用/新竹縣尖石鄉馬里光部落耆老
 . 研究助理:
     . 國立清華大學 ：劉以心、江嘉穗、林憫心、邱子耘、邱筠涵、徐億銓、張妤瑄、張譯云、楊又潔、謝家薰
     . 國立中央大學 ：王騰輝、林祐廷、胡峻愷、黃稟智、詹博丞、範白松`}
@@ -1000,12 +970,7 @@ const RecordingButton = styled.button<{ variant: 'start' | 'stop' }>`
   }
 `;
 
-const AudioInputBox = styled(Box)`
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-`;
+// removed unused AudioInputBox
 
 const RecordButton = styled(ProcessButton)<{ recording?: boolean }>`
   background: ${props => props.recording ? '#e0616c' : '#f57983'};
@@ -1221,13 +1186,7 @@ const SmallImageCard = ({ src, alt }: { src: string; alt: string }) => (
   </Box>
 );
 
-const SmallImageCardRight = ({ src, alt }: { src: string; alt: string }) => (
-  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-    <Box sx={{ width: 200, borderRadius: 2, overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.12)' }}>
-      <img src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-    </Box>
-  </Box>
-);
+// kept SmallImageCardRight if still used elsewhere; otherwise can be removed later
 
 const TranslationPage = ({
   title,
@@ -1242,8 +1201,8 @@ const TranslationPage = ({
   englishTitle: string;
   inputPlaceholder: string;
   outputPlaceholder: string;
-  inputLangLabel: string;
-  outputLangLabel: string;
+  inputLangLabel: React.ReactNode;
+  outputLangLabel: React.ReactNode;
   targetLanguage: 'chinese' | 'atayal';
 }) => {
   const [inputText, setInputText] = React.useState('');
@@ -1472,9 +1431,14 @@ const TranslationPage = ({
 const ASRPage = () => {
   return (
     <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 4 }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
-        華語翻譯成泰雅語
-      </Typography>
+      {/* Title with icons left/right inline */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
+        <img src={'/Trungcolor.png'} alt="zh" style={{ width: 28, height: 28 }} />
+        <Typography variant="h4" sx={{ fontWeight: 700, textAlign: 'center' }}>
+          華語翻譯成泰雅語
+        </Typography>
+        <img src={'/Tcolor.png'} alt="atayal" style={{ width: 28, height: 28 }} />
+      </Box>
       <Typography variant="h6" sx={{ color: '#666', mb: 3, textAlign: 'center', fontStyle: 'italic' }}>
         Translate Chinese to Atayal
       </Typography>
@@ -1482,15 +1446,27 @@ const ASRPage = () => {
       {/* Small image card outside banner */}
       <SmallImageCard src={translateChineseImg} alt="Translate Chinese to Atayal" />
 
-    <TranslationPage
+      
+
+      <TranslationPage
         title=""
         englishTitle=""
         inputPlaceholder="Enter Chinese text..."
-      outputPlaceholder="Atayal translation will appear here..."
-        inputLangLabel="華語輸入 Chinese Input"
-        outputLangLabel="泰雅語輸出 Atayal Output"
-      targetLanguage="atayal"
-    />
+        outputPlaceholder="Atayal translation will appear here..."
+        inputLangLabel={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <img src={'/Trungwhite.png'} alt="zh" style={{ width: 30, height: 30 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#f57983' }}>華語輸入 Chinese Input</Typography>
+          </Box>
+        }
+        outputLangLabel={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <img src={'/Twhite.png'} alt="atayal" style={{ width: 30, height: 30 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#f57983' }}>泰雅語輸出 Atayal Output</Typography>
+          </Box>
+        }
+        targetLanguage="atayal"
+      />
     </Box>
   );
 };
@@ -1499,9 +1475,14 @@ const ASRPage = () => {
 const TTSPage = () => {
   return (
     <Box sx={{ maxWidth: 1100, mx: 'auto', mt: 4 }}>
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
-        泰雅語翻譯成華語
-      </Typography>
+      {/* Title with icons left/right (Atayal left, Chinese right) */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
+        <img src={'/Tcolor.png'} alt="atayal" style={{ width: 28, height: 28 }} />
+        <Typography variant="h4" sx={{ fontWeight: 700, textAlign: 'center' }}>
+          泰雅語翻譯成華語
+        </Typography>
+        <img src={'/Trungcolor.png'} alt="zh" style={{ width: 28, height: 28 }} />
+      </Box>
       <Typography variant="h6" sx={{ color: '#666', mb: 3, textAlign: 'center', fontStyle: 'italic' }}>
         Translate Atayal to Chinese
       </Typography>
@@ -1509,15 +1490,25 @@ const TTSPage = () => {
       {/* Small image card outside banner */}
       <SmallImageCard src={translateAtayalImg} alt="Translate Atayal to Chinese" />
 
-    <TranslationPage
+      <TranslationPage
         title=""
         englishTitle=""
         inputPlaceholder="Enter Atayal text..."
-      outputPlaceholder="Chinese translation will appear here..."
-        inputLangLabel="泰雅語輸入 Atayal Input"
-        outputLangLabel="華語輸出 Chinese Output"
-      targetLanguage="chinese"
-    />
+        outputPlaceholder="Chinese translation will appear here..."
+        inputLangLabel={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <img src={'/Twhite.png'} alt="atayal" style={{ width: 30, height: 30 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#f57983' }}>泰雅語輸入 Atayal Input</Typography>
+          </Box>
+        }
+        outputLangLabel={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <img src={'/Trungwhite.png'} alt="zh" style={{ width: 30, height: 30 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600, color: '#f57983' }}>華語輸出 Chinese Output</Typography>
+          </Box>
+        }
+        targetLanguage="chinese"
+      />
     </Box>
   );
 };
@@ -1640,9 +1631,12 @@ const TranscribePage = () => {
           
           {/* Audio Upload Section */}
           <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#f57983' }}>
-              音檔上傳 Audio Upload
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <img src={'/mouth.png'} alt="mouth" style={{ width: 24, height: 24 }} />
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#f57983' }}>
+                音檔上傳 Audio Upload
+              </Typography>
+            </Box>
             <Typography variant="body2" sx={{ mb: 2, color: '#666' }}>
               支援格式：WAV（推薦）、其他常見音訊格式可嘗試
             </Typography>
@@ -1701,9 +1695,12 @@ const TranscribePage = () => {
           
           {/* Output Section */}
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#f57983' }}>
-              轉錄結果 Transcription Result
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <img src={'/pen.png'} alt="pen" style={{ width: 24, height: 24 }} />
+              <Typography variant="h6" sx={{ fontWeight: 600, color: '#f57983' }}>
+                轉錄結果 Transcription Result
+              </Typography>
+            </Box>
             <TextArea
               placeholder="轉錄結果將顯示在這裡... / Transcription result will appear here..."
               value={outputText}
