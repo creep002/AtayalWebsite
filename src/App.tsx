@@ -231,6 +231,38 @@ const generateSpeech = async (text: string, spkid: number, filename: string) => 
   }
 };
 
+// ASR with answer for scoring pronunciation (see docs: https://service.dltechlab.top/atayal_asr/docs#/default/upload_wav_to_atayal__post)
+const uploadAudioWithAnsToAtayal = async (audioBlob: Blob, ans: string) => {
+  const formData = new FormData();
+  formData.append('file', audioBlob, 'recording.wav');
+
+  const fullUrl = `${ASR_API_BASE}/to_atayal/?ans=${encodeURIComponent(ans)}`;
+
+  try {
+    const res = await fetch(fullUrl, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`HTTP ${res.status} - ${txt}`);
+    }
+
+    const data = await res.json();
+    return {
+      transcription: typeof data?.transcription === 'string' ? data.transcription : '',
+      score: typeof data?.score === 'number' ? data.score : null,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    if (/Failed to fetch|NetworkError/i.test(errorMessage)) {
+      throw new Error('Network error: Please check your internet connection and try again.');
+    }
+    throw new Error(`Scoring service temporarily unavailable: ${errorMessage}`);
+  }
+};
+
 // TODO: Add integration for the remaining 3 APIs
 // - API 2: [To be clarified in tomorrow's meeting]
 // - API 3: [To be clarified in tomorrow's meeting] 
@@ -991,24 +1023,25 @@ const RecordingButton = styled.button<{ variant: 'start' | 'stop' }>`
 // removed unused AudioInputBox
 
 const RecordButton = styled(ProcessButton)<{ recording?: boolean }>`
-  background: ${props => props.recording ? '#e0616c' : '#f57983'};
+  background: ${props => props.recording ? '#e0616c' : '#4CAF50'};
   &:hover {
-    background: ${props => props.recording ? '#cc4f5a' : '#e97f8a'};
+    background: ${props => props.recording ? '#cc4f5a' : '#45a049'};
   }
 `;
 
 const LearningGrid = styled(Box)`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.5rem;
-  margin-top: 2.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.8rem;
+  margin: 2.5rem auto 0 auto;
+  max-width: 960px;
   @media (max-width: 900px) {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 640px;
   }
   @media (max-width: 600px) {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    max-width: 360px;
   }
 `;
 
@@ -1043,79 +1076,95 @@ const PhoneticText = styled.div`
   margin-bottom: 0.5rem;
 `;
 
-const AudioButton = styled.button`
-  background: #f57983;
-  color: #2D3748;
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1.2rem;
-  font-size: 1rem;
-  margin: 0.25rem 0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: background 0.2s;
-  &:hover {
-    background: #e97f8a;
-  }
-`;
-
 const CompareResult = styled.div<{ correct?: boolean }>`
   font-weight: 600;
   color: ${props => props.correct ? '#4caf50' : '#e53935'};
   margin-top: 1rem;
 `;
 
-// Dữ liệu mẫu cho 4 câu học
+// Dữ liệu câu học (Atayal + Chinese)
 const learningData = [
-  { atayal: 'mita', phonetic: 'mi-ta', audio1: '', audio2: '', compare: '100%' },
-  { atayal: 'squliq', phonetic: 'su-liq', audio1: '', audio2: '', compare: '75%' },
-  { atayal: 'yutas', phonetic: 'yu-tas', audio1: '', audio2: '', compare: '80%' },
-  { atayal: 'patas', phonetic: 'pa-tas', audio1: '', audio2: '', compare: '40%' },
+  {
+    atayal: 'nyux msramu qu qba mu la.',
+    chinese: '我的手流血了。',
+  },
+  {
+    atayal: 'baq phtuy ramu qu miquy.',
+    chinese: '五節芒可以止血。',
+  },
+  {
+    atayal: 'hopa qu abaw na bgayaw.',
+    chinese: '姑婆芋的葉子大大的。',
+  },
+  {
+    atayal: 'hata msqun hkangi wasiq pi!',
+    chinese: '一起去找龍葵吧!',
+  },
+  {
+    atayal: 'skbalay pang qu maqaw.',
+    chinese: '用馬告來做麵包。',
+  },
 ];
 
 const LearningPage = () => {
-  const [loadingKey, setLoadingKey] = React.useState<string | null>(null);
-  const audioRef = React.useRef<HTMLAudioElement | null>(null);
-  const lastUrlRef = React.useRef<string | null>(null);
+  const [scores, setScores] = React.useState<(number | null)[]>(() =>
+    Array(learningData.length).fill(null)
+  );
+  const [isRecording, setIsRecording] = React.useState(false);
+  const [isScoring, setIsScoring] = React.useState(false);
+  const [recordingIndex, setRecordingIndex] = React.useState<number | null>(null);
+  const [mediaRecorder, setMediaRecorder] = React.useState<MediaRecorder | null>(null);
 
-  const cleanupAudio = () => {
+  const startRecording = async (index: number) => {
     try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current = null;
-      }
-    } catch {}
-    if (lastUrlRef.current) {
-      try { URL.revokeObjectURL(lastUrlRef.current); } catch {}
-      lastUrlRef.current = null;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+        setMediaRecorder(null);
+        setIsScoring(true);
+
+        const blob = new Blob(chunks, { type: 'audio/wav' });
+        const sentenceIndex = index;
+        const ans = learningData[sentenceIndex].atayal;
+
+        try {
+          const { score } = await uploadAudioWithAnsToAtayal(blob, ans);
+          setScores(prev => {
+            const next = [...prev];
+            next[sentenceIndex] = score;
+            return next;
+          });
+        } catch (err) {
+          console.error('Scoring failed', err);
+        } finally {
+          setRecordingIndex(null);
+          setIsScoring(false);
+        }
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setRecordingIndex(index);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      alert('Could not access microphone. Please check permissions.');
     }
   };
 
-  const handleListen = async (rowIndex: number, voice: 'male' | 'female') => {
-    if (loadingKey) return;
-    const key = `${rowIndex}-${voice}`;
-    setLoadingKey(key);
-    try {
-      const text = learningData[rowIndex].atayal;
-      const spkid = voice === 'female' ? 0 : 1; // female=0, male=1
-      const blob = await generateSpeech(text, spkid, `learn_${rowIndex}`);
-      const url = URL.createObjectURL(blob);
-      cleanupAudio();
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      lastUrlRef.current = url;
-      audio.onended = () => {
-        cleanupAudio();
-        setLoadingKey(null);
-      };
-      await audio.play();
-      setLoadingKey(null);
-    } catch (err) {
-      console.error('Listen failed', err);
-      setLoadingKey(null);
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
     }
   };
 
@@ -1137,36 +1186,8 @@ const LearningPage = () => {
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, textAlign: 'center' }}>Learning Sentences</Typography>
           {learningData.map((item, idx) => (
             <GridRow key={idx}>
-              <PhoneticText>{item.phonetic}</PhoneticText>
               <AtayalText>{item.atayal}</AtayalText>
-            </GridRow>
-          ))}
-        </GridCol>
-        {/* Cột 2: Listen */}
-        <GridCol>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, textAlign: 'center' }}>Listen</Typography>
-          {learningData.map((item, idx) => (
-            <GridRow key={idx}>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <AudioButton
-                  style={{ padding: '0.5rem 0.9rem' }}
-                  onClick={() => handleListen(idx, 'male')}
-                  disabled={!!loadingKey}
-                  title="Listen (male)"
-                >
-                  {loadingKey === `${idx}-male` ? <CircularProgress size={18} color="inherit" /> : <VolumeUpIcon />}
-                  <MaleIcon />
-                </AudioButton>
-                <AudioButton
-                  style={{ padding: '0.5rem 0.9rem' }}
-                  onClick={() => handleListen(idx, 'female')}
-                  disabled={!!loadingKey}
-                  title="Listen (female)"
-                >
-                  {loadingKey === `${idx}-female` ? <CircularProgress size={18} color="inherit" /> : <VolumeUpIcon />}
-                  <FemaleIcon />
-                </AudioButton>
-              </Box>
+              <PhoneticText>{item.chinese}</PhoneticText>
             </GridRow>
           ))}
         </GridCol>
@@ -1175,9 +1196,19 @@ const LearningPage = () => {
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, textAlign: 'center' }}>Try to speak</Typography>
           {learningData.map((item, idx) => (
             <GridRow key={idx}>
-              {/* Sau này sẽ tích hợp ghi âm và gửi lên server để kiểm tra phát âm */}
-              <RecordButton style={{ minWidth: 120 }}>
-                <MicIcon /> Record
+              <RecordButton
+                style={{ minWidth: 120 }}
+                recording={recordingIndex === idx}
+                onClick={() => {
+                  if (recordingIndex === idx) {
+                    stopRecording();
+                  } else if (!isRecording) {
+                    startRecording(idx);
+                  }
+                }}
+                disabled={isScoring}
+              >
+                <MicIcon /> {recordingIndex === idx ? 'Stop' : 'Record'}
               </RecordButton>
             </GridRow>
           ))}
@@ -1187,7 +1218,13 @@ const LearningPage = () => {
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, textAlign: 'center' }}>Compare</Typography>
           {learningData.map((item, idx) => (
             <GridRow key={idx}>
-              <CompareResult correct={parseInt(item.compare) >= 75}>{item.compare}</CompareResult>
+              <CompareResult correct={(scores[idx] ?? 0) >= 0.75}>
+                {isScoring && recordingIndex === idx
+                  ? 'Checking...'
+                  : scores[idx] != null
+                    ? `${Math.round(scores[idx]! * 100)}%`
+                    : '--'}
+              </CompareResult>
             </GridRow>
           ))}
         </GridCol>
