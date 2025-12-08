@@ -8,6 +8,7 @@ import Typography from '@mui/material/Typography';
 import styled from 'styled-components';
 import MicIcon from '@mui/icons-material/Mic';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import HomeIcon from '@mui/icons-material/Home';
 import LocalFloristIcon from '@mui/icons-material/LocalFlorist';
 import SpaIcon from '@mui/icons-material/Spa';
@@ -1031,10 +1032,10 @@ const RecordButton = styled(ProcessButton)<{ recording?: boolean }>`
 
 const LearningGrid = styled(Box)`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 2.2fr 1.2fr 1fr;
   gap: 1.8rem;
   margin: 2.5rem auto 0 auto;
-  max-width: 960px;
+  max-width: 1100px;
   @media (max-width: 900px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     max-width: 640px;
@@ -1082,6 +1083,52 @@ const CompareResult = styled.div<{ correct?: boolean }>`
   margin-top: 1rem;
 `;
 
+const PlayAudioButton = styled.button`
+  background: #f57983;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 0.75rem;
+  flex-shrink: 0;
+  
+  &:hover {
+    background: #e97f8a;
+    transform: scale(1.1);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+  
+  svg {
+    font-size: 20px;
+  }
+`;
+
+const SentenceRow = styled(Box)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  width: 100%;
+`;
+
+const SentenceContent = styled(Box)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0.5rem;
+`;
+
 // Dữ liệu câu học (Atayal + Chinese)
 const learningData = [
   {
@@ -1114,6 +1161,8 @@ const LearningPage = () => {
   const [isScoring, setIsScoring] = React.useState(false);
   const [recordingIndex, setRecordingIndex] = React.useState<number | null>(null);
   const [mediaRecorder, setMediaRecorder] = React.useState<MediaRecorder | null>(null);
+  const [playingIndex, setPlayingIndex] = React.useState<number | null>(null);
+  const audioRefs = React.useRef<(HTMLAudioElement | null)[]>([]);
 
   const startRecording = async (index: number) => {
     try {
@@ -1168,6 +1217,59 @@ const LearningPage = () => {
     }
   };
 
+  const handlePlayAudio = async (index: number) => {
+    // Stop any currently playing audio
+    audioRefs.current.forEach((audio, idx) => {
+      if (audio && idx !== index) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+
+    // If clicking the same audio that's playing, stop it
+    if (playingIndex === index && audioRefs.current[index]) {
+      audioRefs.current[index]?.pause();
+      audioRefs.current[index]!.currentTime = 0;
+      setPlayingIndex(null);
+      return;
+    }
+
+    // Create or reuse audio element
+    if (!audioRefs.current[index]) {
+      const audio = new Audio(`${process.env.PUBLIC_URL}/${index + 1}.m4a`);
+      audioRefs.current[index] = audio;
+      
+      audio.onended = () => {
+        setPlayingIndex(null);
+      };
+      
+      audio.onerror = () => {
+        console.error(`Error loading audio for sentence ${index + 1}`);
+        setPlayingIndex(null);
+      };
+    }
+
+    try {
+      setPlayingIndex(index);
+      await audioRefs.current[index]!.play();
+    } catch (err) {
+      console.error('Error playing audio:', err);
+      setPlayingIndex(null);
+    }
+  };
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      audioRefs.current.forEach(audio => {
+        if (audio) {
+          audio.pause();
+          audio.src = '';
+        }
+      });
+    };
+  }, []);
+
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 4 }}>
       <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, textAlign: 'center' }}>
@@ -1185,10 +1287,24 @@ const LearningPage = () => {
         <GridCol>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, textAlign: 'center' }}>Learning Sentences</Typography>
           {learningData.map((item, idx) => (
-            <GridRow key={idx}>
-              <AtayalText>{item.atayal}</AtayalText>
-              <PhoneticText>{item.chinese}</PhoneticText>
-            </GridRow>
+            <SentenceRow key={idx}>
+              <SentenceContent>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                  <AtayalText>{item.atayal}</AtayalText>
+                  <PhoneticText>{item.chinese}</PhoneticText>
+                </Box>
+                <PlayAudioButton
+                  onClick={() => handlePlayAudio(idx)}
+                  title="Play audio"
+                >
+                  {playingIndex === idx ? (
+                    <CircularProgress size={18} sx={{ color: 'white' }} />
+                  ) : (
+                    <PlayArrowIcon />
+                  )}
+                </PlayAudioButton>
+              </SentenceContent>
+            </SentenceRow>
           ))}
         </GridCol>
         {/* Cột 3: Try to speak */}
